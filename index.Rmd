@@ -7,9 +7,7 @@ output:
     self_contained: false
 ---
 
-```{r}
-nonvoters_data
-```
+
 
 ## Project thoughts
 
