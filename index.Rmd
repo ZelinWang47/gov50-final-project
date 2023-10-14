@@ -7,6 +7,9 @@ output:
     self_contained: false
 ---
 
+```{r}
+read_csv("non-voters/nonvoters_data.csv")
+```
 
 
 ## Project thoughts
