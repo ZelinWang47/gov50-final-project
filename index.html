@@ -115,7 +115,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/header-attrs-2.17/header-attrs.js","index_files/header-attrs-2.24/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","non-voters/nonvoters_codebook.pdf","non-voters/nonvoters_data.csv","non-voters/README.md"]}
+  {"type":"character","attributes":{},"value":["index_files/anchor-4.2.2/anchor.min.js","index_files/bowser-1.9.3/bowser.min.js","index_files/distill-2.2.21/template.v2.js","index_files/figure-html5/unnamed-chunk-2-1.png","index_files/header-attrs-2.17/header-attrs.js","index_files/header-attrs-2.24/header-attrs.js","index_files/jquery-3.6.0/jquery-3.6.0.js","index_files/jquery-3.6.0/jquery-3.6.0.min.js","index_files/jquery-3.6.0/jquery-3.6.0.min.map","index_files/popper-2.6.0/popper.min.js","index_files/tippy-6.2.7/tippy-bundle.umd.min.js","index_files/tippy-6.2.7/tippy-light-border.css","index_files/tippy-6.2.7/tippy.css","index_files/tippy-6.2.7/tippy.umd.min.js","index_files/webcomponents-2.0.0/webcomponents.js","non-voters/nonvoters_codebook.pdf","non-voters/nonvoters_data.csv","non-voters/README.md"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1546,6 +1546,28 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 </div>
 <h2 id="project-thoughts">Project thoughts</h2>
 <p>Does suffering from physical and financial misfortunes (such as chronic illness/disability, and financial hardships) impact ones’ voters’ turnout? I hypothesize that suffering from physical and financial misfortunes negatively impact one’s willingness to vote. That is, if someone is suffering from long-term disability, having a chronic illness, been unemployed for more than a year, or having been evicted from home within the past year, this person is more likely not to show up to vote. My sample size is 5836 respondents to polling done by Ipsos for FiveThirtyEight. One explanatory variable of interest is whether one is experiencing long-term disability. The variable is coded=1 for yes and =2 for no. My outcome variable is based on the voter_category, always, sporadic, or rarely/never as the frequency of voting. I will compare the disabled population with those without disability, if the disabled population shows a significantly lower turnout for voting, then it will support my hypothesis.</p>
+<p>(codebook: <a href="https://github.com/fivethirtyeight/data/blob/master/non-voters/nonvoters_codebook.pdf" class="uri">https://github.com/fivethirtyeight/data/blob/master/non-voters/nonvoters_codebook.pdf</a>)</p>
+<h2 id="milestone-3-data-visualization">Milestone 3 Data Visualization</h2>
+<div class="layout-chunk" data-layout="l-body">
+<div class="sourceCode">
+<pre class="sourceCode r"><code class="sourceCode r"><span><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'>gov50data</span><span class='op'>)</span></span>
+<span><span class='va'>nonvoters</span> <span class='op'>&lt;-</span> <span class='va'>nonvoters</span> <span class='op'>|&gt;</span></span>
+<span><span class='fu'><a href='https://dplyr.tidyverse.org/reference/mutate.html'>mutate</a></span><span class='op'>(</span>long_term_disability <span class='op'>=</span> <span class='fu'><a href='https://dplyr.tidyverse.org/reference/if_else.html'>if_else</a></span><span class='op'>(</span></span>
+<span>  <span class='va'>Q10_1</span> <span class='op'>==</span> <span class='fl'>1</span>, <span class='st'>"Yes"</span>, <span class='st'>"No"</span><span class='op'>)</span><span class='op'>)</span><span class='op'>|&gt;</span></span>
+<span>  <span class='fu'><a href='https://dplyr.tidyverse.org/reference/group_by.html'>group_by</a></span><span class='op'>(</span><span class='va'>long_term_disability</span>, <span class='va'>voter_category</span><span class='op'>)</span> <span class='op'>|&gt;</span></span>
+<span>  <span class='fu'><a href='https://dplyr.tidyverse.org/reference/summarise.html'>summarize</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='fu'><a href='https://dplyr.tidyverse.org/reference/context.html'>n</a></span><span class='op'>(</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>|&gt;</span></span>
+<span>  <span class='fu'><a href='https://dplyr.tidyverse.org/reference/mutate.html'>mutate</a></span><span class='op'>(</span>prop <span class='op'>=</span> <span class='va'>n</span> <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/sum.html'>sum</a></span><span class='op'>(</span><span class='va'>n</span><span class='op'>)</span><span class='op'>)</span></span>
+<span><span class='va'>disabilityplot</span><span class='op'>&lt;-</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/ggplot.html'>ggplot</a></span><span class='op'>(</span>data<span class='op'>=</span><span class='va'>nonvoters</span>, mapping<span class='op'>=</span> <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/aes.html'>aes</a></span><span class='op'>(</span>x<span class='op'>=</span><span class='va'>voter_category</span>, y<span class='op'>=</span><span class='va'>prop</span>, fill<span class='op'>=</span><span class='va'>long_term_disability</span><span class='op'>)</span><span class='op'>)</span> <span class='op'>+</span></span>
+<span>  <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/geom_bar.html'>geom_col</a></span><span class='op'>(</span>position<span class='op'>=</span><span class='st'>"dodge"</span><span class='op'>)</span><span class='op'>+</span></span>
+<span>    <span class='fu'><a href='https://ggplot2.tidyverse.org/reference/labs.html'>labs</a></span><span class='op'>(</span></span>
+<span>    x <span class='op'>=</span> <span class='st'>"Voter Category"</span>,</span>
+<span>    y <span class='op'>=</span> <span class='st'>"Proportion"</span>,</span>
+<span>    title <span class='op'>=</span> <span class='st'>"Disability and Voting"</span><span class='op'>)</span></span>
+<span><span class='va'>disabilityplot</span></span></code></pre>
+</div>
+<p><img src="index_files/figure-html5/unnamed-chunk-2-1.png" width="624" /></p>
+</div>
+<p>Based on the visualization, people with long-term disability tend to vote less than people without long-term disability.</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->
 <!--/radix_placeholder_article_footer-->

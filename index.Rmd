@@ -8,10 +8,34 @@ output:
 ---
 
 ```{r}
-read_csv("non-voters/nonvoters_data.csv")
+library(tidyverse)
+nonvoters <- read_csv("non-voters/nonvoters_data.csv")
+nonvoters
 ```
 
 
 ## Project thoughts
 
 Does suffering from physical and financial misfortunes (such as chronic illness/disability, and financial hardships) impact ones’ voters’ turnout? I hypothesize that suffering from physical and financial misfortunes negatively impact one’s willingness to vote. That is, if someone is suffering from long-term disability, having a chronic illness, been unemployed for more than a year, or having been evicted from home within the past year, this person is more likely not to show up to vote. My sample size is 5836 respondents to polling done by Ipsos for FiveThirtyEight. One explanatory variable of interest is whether one is experiencing long-term disability. The variable is coded=1 for yes and =2 for no. My outcome variable is based on the voter_category, always, sporadic, or rarely/never as the frequency of voting. I will compare the disabled population with those without disability, if the disabled population shows a significantly lower turnout for voting, then it will support my hypothesis.
+
+(codebook: https://github.com/fivethirtyeight/data/blob/master/non-voters/nonvoters_codebook.pdf)
+
+## Milestone 3 Data Visualization
+
+```{r}
+library(gov50data)
+nonvoters <- nonvoters |>
+mutate(long_term_disability = if_else(
+  Q10_1 == 1, "Yes", "No"))|>
+  group_by(long_term_disability, voter_category) |>
+  summarize(n = n()) |>
+  mutate(prop = n / sum(n))
+disabilityplot<- ggplot(data=nonvoters, mapping= aes(x=voter_category, y=prop, fill=long_term_disability)) +
+  geom_col(position="dodge")+
+    labs(
+    x = "Voter Category",
+    y = "Proportion",
+    title = "Disability and Voting")
+disabilityplot
+```
+Based on the visualization, people with long-term disability tend to vote less than people without long-term disability.
