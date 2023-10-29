@@ -38,7 +38,8 @@ disabilityplot<- ggplot(data=nonvoters, mapping= aes(x=voter_category, y=prop, f
     title = "Disability and Voting")
 echo = FALSE
 ```
-```{R}
+```{r}
 disabilityplot
 ```
 Based on the visualization, people with long-term disability tend to vote less than people without long-term disability.
+
