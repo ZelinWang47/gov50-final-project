@@ -1,36 +1,40 @@
 ---
 title: "Gov 50 Final Project"
 author: "Zelin Wang"
-description: "My final project"
+description: "Does suffering from long-term disability impact ones’ voters’ turnout?"
 output:
   distill::distill_article:
     self_contained: false
 ---
 
+## Research question and data:
+
+Does suffering from disability impact ones’ voters’ turnout? I hypothesize that suffering from disability negatively impact one’s willingness to vote. That is, if someone is suffering from long-term disability, this person is more likely not to show up to vote. My sample size is 5836 respondents to polling done by Ipsos for FiveThirtyEight. The explanatory variable of interest is whether one is experiencing long-term disability. The variable is coded=1 for yes and =2 for no. My outcome variable is based on the voter_category, always, sporadic, or rarely/never as the frequency of voting. I will compare the disabled population with those without disability, if the disabled population shows a significantly lower turnout for voting, then it will support my hypothesis.
+
 ```{r}
 library(tidyverse)
 nonvoters <- read_csv("non-voters/nonvoters_data.csv")
-nonvoters
+head(nonvoters)
 ```
 
+GitHub repo :  https://github.com/fivethirtyeight/data/tree/15f210532b2a642e85738ddefa7a2945d47e2585/non-voters
+(Codebook: https://github.com/fivethirtyeight/data/blob/master/non-voters/nonvoters_codebook.pdf)
 
-## Project thoughts
 
-Does suffering from physical and financial misfortunes (such as chronic illness/disability, and financial hardships) impact ones’ voters’ turnout? I hypothesize that suffering from physical and financial misfortunes negatively impact one’s willingness to vote. That is, if someone is suffering from long-term disability, having a chronic illness, been unemployed for more than a year, or having been evicted from home within the past year, this person is more likely not to show up to vote. My sample size is 5836 respondents to polling done by Ipsos for FiveThirtyEight. One explanatory variable of interest is whether one is experiencing long-term disability. The variable is coded=1 for yes and =2 for no. My outcome variable is based on the voter_category, always, sporadic, or rarely/never as the frequency of voting. I will compare the disabled population with those without disability, if the disabled population shows a significantly lower turnout for voting, then it will support my hypothesis.
 
-(codebook: https://github.com/fivethirtyeight/data/blob/master/non-voters/nonvoters_codebook.pdf)
 
-## Milestone 3 Data Visualization
+## Data Visualization
 
 ```{r}
 library(gov50data)
 nonvoters <- nonvoters |>
 mutate(long_term_disability = if_else(
-  Q10_1 == 1, "Yes", "No"))|>
+  Q10_1 == 1, "Yes", "No"))
+nonvoters1 <- nonvoters|>
   group_by(long_term_disability, voter_category) |>
   summarize(n = n()) |>
   mutate(prop = n / sum(n)*100)
-ggplot(data=nonvoters, mapping= aes(x=voter_category, y=prop, fill=long_term_disability)) +
+ggplot(data=nonvoters1, mapping= aes(x=voter_category, y=prop, fill=long_term_disability)) +
   geom_col(position="dodge")+
     labs(
     x = "Voter Category",
@@ -38,13 +42,13 @@ ggplot(data=nonvoters, mapping= aes(x=voter_category, y=prop, fill=long_term_dis
     title = "Disability and Voting")
 ```
 
+Based on the data visualization, people with long-term disability tend to vote less than people without long-term disability. However, we need to do rigorous hypothesis testing to prove that the perceived difference is not to to random chance.
 
-Based on the visualization, people with long-term disability tend to vote less than people without long-term disability.
-
-## Milestone 4 Data Visualization (Add results from one analysis)
+## Average Treatment Effect (ATE)
+In this section, I will calculate the average difference in means of voting turnouts between people with long-term physical disability and people without long-term physical disability.
 
 ```{r}
-nonvoters |>
+nonvoters1 |>
   mutate(long_term_disability=if_else(long_term_disability=="No", "Not Long-term Disabled", "Long-Term Disabled")) |>
   filter(voter_category=="always") |>
   select(long_term_disability, prop) |>
@@ -56,7 +60,7 @@ knitr::kable()
 The table shows that those without long-term disability has a 13.34% points higher than those with long-term disability in their voting pattern as "always" turning out for voting.
 
 ```{r}
-nonvoters |>
+nonvoters1 |>
   mutate(long_term_disability=if_else(long_term_disability=="No", "Not Long-term Disabled", "Long-Term Disabled")) |>
   filter(voter_category=="rarely/never") |>
   select(long_term_disability, prop) |>
@@ -66,3 +70,81 @@ nonvoters |>
   knitr::kable()
 ```
 The table shows that those with long-term disability has a 11.92% points higher than those without long-term disability in their voting pattern as "rarely" turning out for voting.
+That being said, are 13.34 and 11.92 percentage points large enough to show that long-term disability significantly impact one's turnout rates? We need to do hypothesis test to show the significance.
+
+## Hypothesis Test
+In this section, I will do a hypothesis test, with the null hypothesis being that there is no difference in voters' turnout between those with long-term disability and those without long-term disability. The alternative hypothesis would be that there is a difference in voters' turnout between those with long-term disability and those without long-term disability.
+
+```{r}
+library(infer)
+nonvoters2<-nonvoters |>
+  mutate(voter_category1=if_else(voter_category=="always", "Always", "Not Always"))
+nonvoters_null <- nonvoters2 |>
+  specify(voter_category1~long_term_disability, success = "Always") |>
+  hypothesize(null = "independence") |>
+  generate(reps=1000, type = "permute")|>
+  calculate (stat= "diff in props", order = c("Yes","No")) |>
+  get_ci(level=0.99)
+ate_pval<-nonvoters_null|>
+  get_p_value(obs_stat = 13.34, direction="both")
+ate_pval
+```
+Based on the output p_value that is close to 0, we are very confident to reject the null hypothesis. Therefore, we can accept the alternative hypothesis that there is a difference in voters' turnout between those with long-term disability and those without long-term disability.
+
+
+## Linear Regression
+In this section, I will run a linear regression, with the x-axis being the status of disability (0 indicates long-term disability, and 1 indicates that the repondent does not have long-term disability). The y-axis shows voting turnout, 0 means "rarely/never", 0.5 is "sporadic", and 1 means "always"
+
+```{r}
+nonvotersnumerical <- nonvoters2 |>
+  mutate(long_term_disabilitynum=if_else(long_term_disability=="No", 0, 1),
+         voter_categorynum=case_when(voter_category=="always"~1,
+                                     voter_category=="sporadic"~0.5,
+                                     voter_category=="rarely/never"~ 0))
+```
+
+
+```{r}
+ggplot(data = nonvotersnumerical,
+       mapping = aes(x = long_term_disabilitynum,
+                     y = voter_categorynum)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) 
+```
+The graph shows that there is a negative relationship between having long-term disability and voter's turnout. Meaning that on average, having long-term  disability adversely impacts one's turnout. And the following chart shows that since the p value of the slope associated with having long-term ability is less than 0.001, we are very confident about the negative relationship.
+
+```{r}
+nonvotersreg <-
+  lm(voter_categorynum~long_term_disabilitynum, data=nonvotersnumerical)
+modelsummary::modelsummary(nonvotersreg,
+statistic = c("s.e. = {std.error}",
+"p = {p.value}"),
+gof_map = c("nobs", "r.squared", "adj.r.squared"))
+```
+
+## Other variables to consider
+In this section, I will also consider other variables such as gender, race, education, and party identification, and their impacts on voting turnout.
+
+```{R}
+nonvotersnumerical1 <-nonvotersnumerical |>
+  mutate(gendernum=if_else(gender=="Male", 1, 0),
+         racenum=if_else(race=="White", 1, 0),
+         educnum=if_else(educ=="College", 1, 0),
+         repubnum=if_else(Q30=="1", 1, 0))
+```
+
+```{r}
+nonvotersreg <-
+  lm(voter_categorynum~long_term_disabilitynum + gendernum + racenum + educnum + repubnum, data=nonvotersnumerical1)
+modelsummary::modelsummary(nonvotersreg,
+statistic = c("s.e. = {std.error}",
+"p = {p.value}"),
+gof_map = c("nobs", "r.squared", "adj.r.squared"))
+```
+
+
+It turns out the all of the factors listed above, with high confidence level, impact the voting turnout. However, long-term disability and having college education are two factors that impact voting turnout the most.
+
+## Conclusion:
+In conclusion, this project successfully demonstrates that having long-term disability adversely impacts one's voting turnout. Limitation of this project are threefold: a) This is not a randomized experiment, so I am not able to conclude causality from this experiment. In fact, it would be unethical to conduct a randomized experiment on this project; b) This questionnaire contains a fairly large number of over 100 entries, and therefore, some respondents might have lost patience toward the end of the survey and put in random answers. Therefore, the accuracy of the questionnaire cannot be guaranteed; c) last but not least, long-term disability might be closely related to one's income and so income acts as a confounding factor. There might exist other confounding factors to consider.
+
